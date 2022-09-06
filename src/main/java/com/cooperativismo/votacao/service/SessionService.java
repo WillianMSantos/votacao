@@ -6,7 +6,6 @@ import com.cooperativismo.votacao.exception.ExistingSessionException;
 import com.cooperativismo.votacao.exception.ScheduleNotFoundException;
 import com.cooperativismo.votacao.model.Schedule;
 import com.cooperativismo.votacao.model.Session;
-import com.cooperativismo.votacao.repository.IdGenerator;
 import com.cooperativismo.votacao.repository.ScheduleRepository;
 import com.cooperativismo.votacao.repository.SessionRepository;
 import lombok.val;
@@ -29,15 +28,14 @@ public class SessionService {
     @Autowired
     private ScheduleRepository scheduleRepository;
 
-    private IdGenerator idGenerator;
 
     public void createSession(String codeSchedule, SessionRequestDto sessionRequestDto) {
         Session session = new Session();
         Optional<Schedule> schedule = scheduleRepository.findByCodeSchedule(codeSchedule);
 
-        session.setId(idGenerator.generateId());
+        session.setId(sessionRequestDto.getId());
 
-        if (sessionRepository.findBySessionCode(sessionRequestDto.getSessionCode()).isPresent()){
+        if (sessionRepository.findBySessionCode(sessionRequestDto.getId()).isPresent()){
             throw new ExistingSessionException();
         }
 
@@ -45,7 +43,7 @@ public class SessionService {
             throw new ScheduleNotFoundException();
         }
 
-        session.setSessionCode(sessionRequestDto.getSessionCode());
+        session.setId(sessionRequestDto.getId());
         session.setSchedule(schedule.get());
         session = validateTime(sessionRequestDto);
         sessionRepository.save(session);
@@ -73,8 +71,8 @@ public class SessionService {
                           .collect(Collectors.toList());
     }
 
-    public void deleteSession(String sessionCode) {
-        sessionRepository.findBySessionCode(sessionCode)
+    public void deleteSession(String id) {
+        sessionRepository.findById(id)
                          .map(session -> {
                              sessionRepository.delete(session);
                              return Void.TYPE; }).orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -82,17 +80,24 @@ public class SessionService {
     }
 
 
-    public SessionResponseDto findSessionBySessionCode(String sessionCode) {
-        Session session = findBySessionCode(sessionCode);
+    public SessionResponseDto findSessionBySessionCode(String id) {
+        Session session = findById(id);
         return SessionResponseDto.toSessionResponseDto(session);
     }
 
 
-    private Session findBySessionCode(String sessionCode) {
-        return sessionRepository.findBySessionCode(sessionCode)
+    private Session findById(String id) {
+        return sessionRepository.findById(id)
                 .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Session not found"));
 
+    }
+
+    public Session findByIdAndScheduleId(String idSession, String scheduleId) {
+
+        return sessionRepository.findByIdAndScheduleId(idSession, scheduleId)
+                .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Session not found"));
     }
 
 }

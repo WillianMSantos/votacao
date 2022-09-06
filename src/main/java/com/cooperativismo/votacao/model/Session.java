@@ -18,7 +18,6 @@ public class Session {
 
     @Id
     private String id;
-    private String sessionCode;
     private LocalDateTime startDate;
     private Long expiryMinutes;
     private Schedule schedule;

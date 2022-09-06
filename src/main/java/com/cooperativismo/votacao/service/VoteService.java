@@ -1,0 +1,145 @@
+package com.cooperativismo.votacao.service;
+
+import com.cooperativismo.votacao.dto.request.VoteRequestDto;
+import com.cooperativismo.votacao.dto.response.CpfValidationDto;
+import com.cooperativismo.votacao.dto.response.VoteResultResponseDto;
+import com.cooperativismo.votacao.exception.*;
+import com.cooperativismo.votacao.model.Schedule;
+import com.cooperativismo.votacao.model.Session;
+import com.cooperativismo.votacao.model.Vote;
+import com.cooperativismo.votacao.repository.VoteRepository;
+import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+
+@Service
+public class VoteService {
+
+    private static final String CPF_UNABLE_TO_VOTE = "UNABLE_TO_VOTE";
+
+    @Autowired
+    private VoteRepository voteRepository;
+
+    @Autowired
+    private SessionService sessionService;
+
+    @Autowired
+    private VotingService votingService;
+
+
+    @Value("{cpf.url}")
+    private String cpfUrl = "";
+
+
+    public Vote createVote(String idSchedule, String idSession, VoteRequestDto voteRequestDto) {
+
+        val session = sessionService.findByIdAndScheduleId(idSession, idSchedule);
+
+        if(!idSchedule.equals(session.getSchedule().getId())) {
+            throw new InvalidSessionException();
+        }
+
+        val vote = new Vote();
+
+        vote.setId(voteRequestDto.getId());
+        vote.setCpf(voteRequestDto.getCpf());
+        vote.setVote(voteRequestDto.getVote());
+        vote.setSchedule(session.getSchedule());
+
+        return verifyAndSave(session, vote);
+    }
+
+    private Vote verifyAndSave(final Session session, final Vote vote) {
+        verifyVote(session, vote);
+        return voteRepository.save(vote);
+    }
+
+    public void verifyVote(Session session, Vote vote) {
+
+        val limitDate = session.getStartDate().plusMinutes(session.getExpiryMinutes());
+        if (LocalDateTime.now().isAfter(limitDate)) {
+            sendMessage(vote.getSchedule());
+            throw new SessionTimeOutException();
+        }
+
+        cpfAbleForVote(vote);
+        checkIfVoteAlreadyExists(vote);
+    }
+
+
+    public void checkIfVoteAlreadyExists(Vote vote) {
+
+        val voteByCpfAndSchedule = voteRepository.findByCpfAndScheduleId(vote.getCpf(), vote.getId());
+
+        if(voteByCpfAndSchedule.isPresent()){
+            throw new VoteAlreadyExistsException();
+        }
+
+    }
+
+
+    private void sendMessage(Schedule schedule) {
+        VoteResultResponseDto voteResultResponseDto = votingService.buildVoteSchedule(schedule.getId());
+    }
+
+    public void cpfAbleForVote(Vote vote) {
+        val cpfValidation = getCpfValidation(vote);
+
+        if(HttpStatus.OK.equals(cpfValidation.getStatusCode())){
+            if(CPF_UNABLE_TO_VOTE.equalsIgnoreCase(cpfValidation.getBody().getStatus())) {
+                throw new CpfUnableException();
+            }
+        }else {
+            throw new CpfInvalidException();
+        }
+    }
+
+    private ResponseEntity<CpfValidationDto> getCpfValidation(final Vote vote) {
+        val headers = new HttpHeaders();
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+
+        val entity = new HttpEntity<>(headers);
+        val restTemplate = new RestTemplate();
+
+        return restTemplate.exchange(cpfUrl.concat("/").concat(vote.getCpf()),
+                HttpMethod.GET, entity, CpfValidationDto.class);
+    }
+
+
+    public List<Vote> findAll() {
+        return voteRepository.findAll();
+    }
+
+
+    public Vote findById(String id) {
+        return voteRepository.findById(id)
+                .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "vote not found"));
+    }
+
+
+    public List<Vote> findByScheduleId(String id){
+
+        return voteRepository.findByScheduleId(id)
+                             .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                     "vote not found"));
+    }
+
+
+    public void delete(String id) {
+        voteRepository.findById(id)
+                .map(vote -> {
+                    voteRepository.delete(vote);
+                    return Void.TYPE;}).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Vote not found"));
+    }
+
+}

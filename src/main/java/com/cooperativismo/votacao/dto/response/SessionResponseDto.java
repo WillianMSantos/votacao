@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class SessionResponseDto {
 
-    private String sessionCode;
+    private String id;
     private LocalDateTime startDate;
     private Long expiryMinutes;
 
@@ -19,7 +19,7 @@ public class SessionResponseDto {
     public static SessionResponseDto toSessionResponseDto(Session session) {
 
         return SessionResponseDto.builder()
-                .sessionCode(session.getSessionCode())
+                .id(session.getId())
                 .startDate(session.getStartDate())
                 .expiryMinutes(session.getExpiryMinutes())
                 .build();

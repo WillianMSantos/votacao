@@ -33,7 +33,7 @@ public class VotingService {
 
     public VoteResultResponseDto getResultVoting(String id) {
         val votingSchedule = buildVoteSchedule(id);
-        kafkaSender.sendMessage(votingSchedule);
+        //kafkaSender.sendMessage(votingSchedule);
         return votingSchedule;
     }
 

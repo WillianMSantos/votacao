@@ -97,7 +97,7 @@ public class VoteService {
 
     private void sendMessage(Schedule schedule) {
         VoteResultResponseDto voteResultResponseDto = votingService.buildVoteSchedule(schedule.getId());
-        kafkaSender.sendMessage(voteResultResponseDto);
+        //kafkaSender.sendMessage(voteResultResponseDto);
     }
 
     public void cpfAbleForVote(Vote vote) {

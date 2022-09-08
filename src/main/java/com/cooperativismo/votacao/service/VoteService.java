@@ -4,9 +4,11 @@ import com.cooperativismo.votacao.dto.request.VoteRequestDto;
 import com.cooperativismo.votacao.dto.response.CpfValidationDto;
 import com.cooperativismo.votacao.dto.response.VoteResultResponseDto;
 import com.cooperativismo.votacao.exception.*;
+import com.cooperativismo.votacao.kafka.KafkaSender;
 import com.cooperativismo.votacao.model.Schedule;
 import com.cooperativismo.votacao.model.Session;
 import com.cooperativismo.votacao.model.Vote;
+import com.cooperativismo.votacao.repository.ScheduleRepository;
 import com.cooperativismo.votacao.repository.VoteRepository;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,21 +31,28 @@ public class VoteService {
     private VoteRepository voteRepository;
 
     @Autowired
+    private ScheduleService scheduleService;
+
+    @Autowired
     private SessionService sessionService;
+
+    @Autowired
+    private KafkaSender kafkaSender;
 
     @Autowired
     private VotingService votingService;
 
 
-    @Value("{cpf.url}")
+    @Value("${cpf.url}")
     private String cpfUrl = "";
 
 
     public Vote createVote(String idSchedule, String idSession, VoteRequestDto voteRequestDto) {
 
-        val session = sessionService.findByIdAndScheduleId(idSession, idSchedule);
+        val session = sessionService.findById(idSession);
+        val schedule = scheduleService.findById(idSchedule);
 
-        if(!idSchedule.equals(session.getSchedule().getId())) {
+        if(!schedule.getId().equals(session.getSchedule().getId())) {
             throw new InvalidSessionException();
         }
 
@@ -88,6 +97,7 @@ public class VoteService {
 
     private void sendMessage(Schedule schedule) {
         VoteResultResponseDto voteResultResponseDto = votingService.buildVoteSchedule(schedule.getId());
+        kafkaSender.sendMessage(voteResultResponseDto);
     }
 
     public void cpfAbleForVote(Vote vote) {
@@ -109,7 +119,7 @@ public class VoteService {
         val entity = new HttpEntity<>(headers);
         val restTemplate = new RestTemplate();
 
-        return restTemplate.exchange(cpfUrl.concat("/").concat(vote.getCpf()),
+        return restTemplate.exchange(cpfUrl.concat(vote.getCpf()),
                 HttpMethod.GET, entity, CpfValidationDto.class);
     }
 

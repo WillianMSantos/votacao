@@ -13,6 +13,5 @@ import java.time.LocalDateTime;
 public class SessionRequestDto {
 
     private String id;
-    private LocalDateTime startDate;
     private Long expiryMinutes;
 }

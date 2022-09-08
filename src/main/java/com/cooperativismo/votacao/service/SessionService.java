@@ -8,7 +8,6 @@ import com.cooperativismo.votacao.model.Schedule;
 import com.cooperativismo.votacao.model.Session;
 import com.cooperativismo.votacao.repository.ScheduleRepository;
 import com.cooperativismo.votacao.repository.SessionRepository;
-import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,39 +26,36 @@ public class SessionService {
     @Autowired
     private ScheduleRepository scheduleRepository;
 
+    @Autowired
+    private ScheduleService scheduleService;
 
-    public void createSession(String codeSchedule, SessionRequestDto sessionRequestDto) {
+    public void createSession(String id, SessionRequestDto sessionRequestDto) {
         Session session = new Session();
-        Optional<Schedule> schedule = scheduleRepository.findByCodeSchedule(codeSchedule);
+        Schedule schedule = scheduleService.findById(id);
 
         session.setId(sessionRequestDto.getId());
+        session.setSchedule(schedule);
 
-        if (sessionRepository.findBySessionCode(sessionRequestDto.getId()).isPresent()){
+        if (sessionRepository.findById(sessionRequestDto.getId()).isPresent()){
             throw new ExistingSessionException();
         }
 
-        if (!schedule.isPresent()){
+        if (schedule.equals(null)){
             throw new ScheduleNotFoundException();
         }
 
-        session.setId(sessionRequestDto.getId());
-        session.setSchedule(schedule.get());
-        session = validateTime(sessionRequestDto);
-        sessionRepository.save(session);
-    }
-
-    private Session validateTime(SessionRequestDto sessionRequestDto) {
-
-        val session = new Session();
-        if(sessionRequestDto.getStartDate() == null) {
+        if(session.getStartDate() == null) {
             session.setStartDate(LocalDateTime.now());
         }
 
         if(sessionRequestDto.getExpiryMinutes() == null) {
             session.setExpiryMinutes(1L);
+        }else {
+            session.setExpiryMinutes(sessionRequestDto.getExpiryMinutes());
         }
 
-        return sessionRepository.save(session);
+        session.setId(sessionRequestDto.getId());
+        sessionRepository.save(session);
     }
 
     public List<SessionResponseDto> findAll() {
@@ -86,7 +81,7 @@ public class SessionService {
     }
 
 
-    private Session findById(String id) {
+    public Session findById(String id) {
         return sessionRepository.findById(id)
                 .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Session not found"));

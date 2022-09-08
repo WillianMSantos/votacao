@@ -7,8 +7,6 @@ import java.util.Optional;
 
 public interface SessionRepository extends MongoRepository<Session, String> {
 
-    Optional<Session> findBySessionCode(String sessionCode);
-
     Long countByScheduleId(String id);
 
     Optional<Session> findByIdAndScheduleId(String id, String scheduleId);

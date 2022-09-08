@@ -4,6 +4,7 @@ package com.cooperativismo.votacao.service;
 import com.cooperativismo.votacao.dto.response.VoteResultResponseDto;
 import com.cooperativismo.votacao.exception.BusinessException;
 import com.cooperativismo.votacao.exception.VotingNotFoundException;
+import com.cooperativismo.votacao.kafka.KafkaSender;
 import com.cooperativismo.votacao.model.Schedule;
 import com.cooperativismo.votacao.model.Vote;
 import com.cooperativismo.votacao.repository.SessionRepository;
@@ -24,11 +25,15 @@ public class VotingService {
     private VoteRepository voteRepository;
 
     @Autowired
+    private KafkaSender kafkaSender;
+
+    @Autowired
     private SessionRepository sessionRepository;
 
 
     public VoteResultResponseDto getResultVoting(String id) {
         val votingSchedule = buildVoteSchedule(id);
+        kafkaSender.sendMessage(votingSchedule);
         return votingSchedule;
     }
 

@@ -19,3 +19,12 @@
 -MongoDb.<br>
 -Maven.<br>
 -Swagger.<br>
+
+<h2> Executar projeto </h2>
+
+Executar o projeto.
+
+Esta disponível o swagger para utilizar ambos os endpoints.
+
+swagger: localhost:8080/swagger-ui.html#/
+

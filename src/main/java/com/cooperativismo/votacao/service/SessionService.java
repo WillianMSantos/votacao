@@ -20,16 +20,23 @@ import java.util.stream.Collectors;
 @Service
 public class SessionService {
 
-    @Autowired
     private SessionRepository sessionRepository;
 
-    @Autowired
     private ScheduleRepository scheduleRepository;
 
-    @Autowired
     private ScheduleService scheduleService;
 
-    public void createSession(String id, SessionRequestDto sessionRequestDto) {
+    @Autowired
+    public SessionService(SessionRepository sessionRepository, ScheduleRepository scheduleRepository,
+                          ScheduleService scheduleService){
+
+        this.sessionRepository = sessionRepository;
+        this.scheduleRepository = scheduleRepository;
+        this.scheduleService = scheduleService;
+    }
+
+
+    public SessionResponseDto createSession(String id, SessionRequestDto sessionRequestDto) {
         Session session = new Session();
         Schedule schedule = scheduleService.findById(id);
 
@@ -56,6 +63,8 @@ public class SessionService {
 
         session.setId(sessionRequestDto.getId());
         sessionRepository.save(session);
+
+        return SessionResponseDto.toSessionResponseDto(session);
     }
 
     public List<SessionResponseDto> findAll() {

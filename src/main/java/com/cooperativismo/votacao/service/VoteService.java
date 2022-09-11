@@ -27,24 +27,33 @@ public class VoteService {
 
     private static final String CPF_UNABLE_TO_VOTE = "UNABLE_TO_VOTE";
 
-    @Autowired
     private VoteRepository voteRepository;
 
-    @Autowired
+    private RestTemplate restTemplate;
+
     private ScheduleService scheduleService;
 
-    @Autowired
     private SessionService sessionService;
 
-    @Autowired
     private KafkaSender kafkaSender;
 
-    @Autowired
     private VotingService votingService;
 
 
     @Value("${cpf.url}")
     private String cpfUrl = "";
+
+    @Autowired
+    public VoteService(RestTemplate restTemplate, VoteRepository voteRepository,
+                       SessionService sessionService, VotingService votingService,
+                       ScheduleService scheduleService) {
+
+        this.restTemplate = restTemplate;
+        this.voteRepository = voteRepository;
+        this.sessionService = sessionService;
+        this.votingService = votingService;
+        this.scheduleService = scheduleService;
+    }
 
 
     public Vote createVote(String idSchedule, String idSession, VoteRequestDto voteRequestDto) {
@@ -100,7 +109,7 @@ public class VoteService {
         //kafkaSender.sendMessage(voteResultResponseDto);
     }
 
-    public void cpfAbleForVote(Vote vote) {
+    protected void cpfAbleForVote(Vote vote) {
         val cpfValidation = getCpfValidation(vote);
 
         if(HttpStatus.OK.equals(cpfValidation.getStatusCode())){
@@ -115,9 +124,7 @@ public class VoteService {
     private ResponseEntity<CpfValidationDto> getCpfValidation(final Vote vote) {
         val headers = new HttpHeaders();
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-
-        val entity = new HttpEntity<>(headers);
-        val restTemplate = new RestTemplate();
+        val entity  = new HttpEntity<>(headers);
 
         return restTemplate.exchange(cpfUrl.concat(vote.getCpf()),
                 HttpMethod.GET, entity, CpfValidationDto.class);

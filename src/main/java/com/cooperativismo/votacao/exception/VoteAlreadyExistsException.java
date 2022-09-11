@@ -1,6 +1,8 @@
 package com.cooperativismo.votacao.exception;
 
-public class VoteAlreadyExistsException extends RuntimeException {
+import org.springframework.http.HttpStatus;
 
-    public VoteAlreadyExistsException(){super("Vote already exists");}
+public class VoteAlreadyExistsException extends BusinessException {
+
+    public VoteAlreadyExistsException(){super("Vote already exists", HttpStatus.ALREADY_REPORTED);}
 }

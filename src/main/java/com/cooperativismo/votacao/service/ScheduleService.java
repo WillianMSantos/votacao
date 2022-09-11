@@ -14,11 +14,13 @@ import java.util.List;
 @Service
 public class ScheduleService {
 
-    @Autowired
     private ScheduleRepository scheduleRepository;
 
+
     @Autowired
-    private SessionService sessionService;
+    public ScheduleService(ScheduleRepository scheduleRepository){
+        this.scheduleRepository = scheduleRepository;
+    }
 
 
     public Schedule registerSchedule(ScheduleRequestDto scheduleRequestDto) {

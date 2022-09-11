@@ -5,8 +5,11 @@ import com.cooperativismo.votacao.dto.response.VoteResultResponseDto;
 import com.cooperativismo.votacao.service.VotingService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,14 +18,21 @@ import org.springframework.web.bind.annotation.*;
 public class VotingController {
 
 
-    @Autowired
     private VotingService votingService;
 
+    @Autowired
+    public VotingController(VotingService votingService) {
+        this.votingService = votingService;
+    }
 
-    @ApiOperation(value = "Result vote")
+    @ApiOperation(value = "Result vote", response = VoteResultResponseDto.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Result vote")
+    })
     @GetMapping("/{id}/votacao")
     @ResponseStatus(HttpStatus.OK)
-    public VoteResultResponseDto findVotesByScheduleId(@PathVariable String id) {
-        return votingService.getResultVoting(id);
+    public ResponseEntity<?> findVotesByScheduleId(@PathVariable String id) {
+        VoteResultResponseDto voteResultResponseDto = this.votingService.buildVoteSchedule(id);
+        return ResponseEntity.ok(voteResultResponseDto);
     }
 }

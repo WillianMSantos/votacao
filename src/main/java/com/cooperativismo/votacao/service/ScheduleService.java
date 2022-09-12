@@ -1,6 +1,7 @@
 package com.cooperativismo.votacao.service;
 
 import com.cooperativismo.votacao.dto.request.ScheduleRequestDto;
+import com.cooperativismo.votacao.exception.ScheduleNotFoundException;
 import com.cooperativismo.votacao.model.Schedule;
 import com.cooperativismo.votacao.repository.ScheduleRepository;
 import lombok.val;
@@ -42,15 +43,13 @@ public class ScheduleService {
         scheduleRepository.findById(id)
                           .map(schedule -> {
                               scheduleRepository.delete(schedule);
-                              return Void.TYPE;}).orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                              "Schedule not found"));
+                              return Void.TYPE;}).orElseThrow(()-> new ScheduleNotFoundException());
     }
 
     public Schedule findById(String id) {
 
         return scheduleRepository.findById(id)
-                .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Schedule not found"));
+                .orElseThrow(()-> new ScheduleNotFoundException());
     }
 
 }
